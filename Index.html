@@ -1,0 +1,169 @@
+Aquí lo tienes de nuevo, Arturo. Copia y pega tal cual.
+
+*ARCHIVO 1 - Ponle nombre `config.js`*
+
+Crea un archivo nuevo en Acode, llámalo `config.js` y pega esto:
+const firebaseConfig = {
+  apiKey: "AIzaSyCDJG0Ej6v_xCMabNV2eyXUVphS0my5UNA",
+  authDomain: "aires-cisz.firebaseapp.com",
+  databaseURL: "https://aires-cisz-default-rtdb.firebaseio.com",
+  projectId: "aires-cisz",
+  storageBucket: "aires-cisz.firebasestorage.app",
+  messagingSenderId: "409785607943",
+  appId: "1:409785607943:web:bd69fff637e785f70107a2",
+  measurementId: "G-4C0PYHG0F6"
+};
+Guárdalo.
+
+*ARCHIVO 2 - Ponle nombre `index.html`*
+
+Crea otro archivo nuevo, llámalo `index.html` y pega TODO esto:
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aires CISZ - 6 Niveles</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+body{margin:0;font-family:system-ui;background:#111;color:#fff}
+header{padding:10px;background:#000;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+#planoWrap{position:relative;width:100%;height:82vh;overflow:auto;background:#222}
+#planoImg{width:100%;display:block;min-height:500px}
+.aire{position:absolute;width:64px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;border:2px solid #fff;transform:translate(-50%,-50%);cursor:pointer;box-shadow:0 2px 8px #0008;z-index:2}
+#modal{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;z-index:99;padding:12px}
+.box{background:#fff;color:#000;border-radius:16px;padding:14px;width:100%;max-width:420px;max-height:90vh;overflow:auto}
+button{cursor:pointer}
+</style>
+</head>
+<body>
+<header>
+<b>AIRES CISZ</b>
+<div style="display:flex;gap:6px">
+<select id="nivelSel" onchange="cargarNivel()" style="padding:8px;border-radius:8px">
+<option value="1">Nivel 1</option>
+<option value="2">Nivel 2</option>
+<option value="3">Nivel 3</option>
+<option value="4">Nivel 4</option>
+<option value="5">Nivel 5</option>
+<option value="6">Nivel 6</option>
+</select>
+<button onclick="modoAgregar=true;alert('MODO AGREGAR: Ahora toca el plano donde está el aire')" style="padding:8px 12px;border-radius:8px;background:#22c55e;color:#fff;border:none;font-weight:700">+ Aire</button>
+</div>
+</header>
+
+<div id="planoWrap" onclick="ponerAire(event)">
+<img id="planoImg" src="planos/nivel1.png" alt="Sube tus planos a la carpeta planos/nivel1.png">
+</div>
+
+<div id="modal"><div class="box">
+<h3 id="mId" style="margin:0 0 8px">N1-01</h3>
+<label>Falla:</label>
+<select id="falla" style="width:100%;padding:10px;border-radius:8px;font-size:14px;margin-top:4px">
+<option value="Bien|#22c55e">Bien - Verde</option>
+<option value="Es filtro|#facc15">Es filtro - Amarillo</option>
+<option value="Cambio de filtro|#facc15">Cambio de filtro - Amarillo</option>
+<option value="Cambio de pilas a termostato|#facc15">Cambio pilas - Amarillo</option>
+<option value="Ajuste de temperatura|#a3e635">Ajuste temperatura - Verde claro</option>
+<option value="Programación|#a3e635">Programación - Verde claro</option>
+<option value="Se agrega nudo|#fb923c">Se agrega nudo - Naranja</option>
+<option value="Se agrega gran patada|#fb923c">Gran patada - Naranja</option>
+<option value="Termostato no sirve|#f97316">Termostato no sirve - Naranja fuerte</option>
+<option value="Le falta gas|#ef4444">Le falta gas - Rojo</option>
+<option value="Fuga de gas|#dc2626">Fuga de gas - Rojo fuerte</option>
+<option value="Capacitor dañado|#dc2626">Capacitor dañado - Rojo fuerte</option>
+<option value="Compresor dañado|#991b1b">Compresor dañado - ROJO INTENSO</option>
+<option value="Otros especifique|#7f1d1d">Otros - ROJO INTENSO</option>
+</select>
+<textarea id="hecho" placeholder="¿Qué se le hizo? Ej: Se cargó gas, se lavó filtro..." style="width:100%;height:70px;margin-top:8px;padding:8px;border-radius:8px"></textarea>
+<input id="usuario" placeholder="Tu nombre Ej: Carlos" style="width:100%;padding:8px;margin-top:8px;border-radius:8px">
+<div style="display:flex;gap:8px;margin-top:10px"><button onclick="cerrar()" style="flex:1;padding:10px;border-radius:8px">Cancelar</button><button onclick="guardar()" style="flex:1;padding:10px;background:#000;color:#fff;border-radius:8px;font-weight:700">Guardar</button></div>
+<div id="hist" style="margin-top:10px;max-height:140px;overflow:auto;font-size:12px;border-top:1px solid #ddd;padding-top:6px"></div>
+</div></div>
+
+<script src="config.js"></script>
+<script>
+let db, nivel=1, aireSel=null, modoAgregar=false, aires={};
+firebase.initializeApp(firebaseConfig); 
+db=firebase.database();
+
+function cargarNivel(){ 
+  nivel=document.getElementById('nivelSel').value; 
+  document.getElementById('planoImg').src=`planos/nivel${nivel}.png`; 
+  escuchar(); 
+}
+
+function escuchar(){ 
+  db.ref('edificio/nivel'+nivel).on('value',snap=>{ 
+    aires=snap.val()||{}; 
+    dibujar(); 
+  }); 
+}
+
+function dibujar(){ 
+  document.querySelectorAll('.aire').forEach(e=>e.remove()); 
+  for(let id in aires){ 
+    if(id==='historial') continue; 
+    let a=aires[id]; 
+    if(!a.x) continue; 
+    let d=document.createElement('div'); 
+    d.className='aire'; 
+    d.style.left=a.x+'%'; 
+    d.style.top=a.y+'%'; 
+    d.style.background=a.color||'#22c55e'; 
+    d.innerText=id; 
+    d.onclick=(ev)=>{ev.stopPropagation(); abrir(id);}; 
+    document.getElementById('planoWrap').appendChild(d);
+  } 
+}
+
+function ponerAire(e){ 
+  if(!modoAgregar) return; 
+  let rect=document.getElementById('planoImg').getBoundingClientRect(); 
+  let wrap=document.getElementById('planoWrap'); 
+  let x=((e.clientX-rect.left+wrap.scrollLeft)/document.getElementById('planoImg').width*100).toFixed(2); 
+  let y=((e.clientY-rect.top+wrap.scrollTop)/document.getElementById('planoImg').height*100).toFixed(2); 
+  let id=prompt('ID del aire Ej: N'+nivel+'-12'); 
+  if(!id) return; 
+  db.ref('edificio/nivel'+nivel+'/'+id).set({
+    x:x,y:y,falla:'Bien',color:'#22c55e',hecho:'Instalado',usuario:'Admin',fecha:new Date().toLocaleString()
+  }); 
+  modoAgregar=false; 
+}
+
+function abrir(id){ 
+  aireSel=id; 
+  document.getElementById('mId').innerText=id; 
+  document.getElementById('modal').style.display='flex'; 
+  db.ref('edificio/nivel'+nivel+'/'+id+'/historial').limitToLast(10).once('value',s=>{ 
+    let h=''; let v=s.val(); 
+    if(v){ Object.values(v).reverse().forEach(r=>{ h+=`<div><b style="color:${r.color}"> ${r.falla}</b> - ${r.usuario} ${r.fecha}<br>${r.hecho}</div><hr>`})} 
+    document.getElementById('hist').innerHTML=h||'Sin historial'; 
+  }); 
+}
+
+function cerrar(){ document.getElementById('modal').style.display='none'; }
+
+function guardar(){ 
+  let [falla,color]=document.getElementById('falla').value.split('|'); 
+  let hecho=document.getElementById('hecho').value; 
+  let usuario=document.getElementById('usuario').value||'Tecnico'; 
+  if(!hecho){alert('Escribe qué se le hizo');return;} 
+  let fecha=new Date().toLocaleString(); 
+  db.ref('edificio/nivel'+nivel+'/'+aireSel).update({falla: falla, color: color, hecho: hecho, usuario: usuario, fecha: fecha}); 
+  db.ref('edificio/nivel'+nivel+'/'+aireSel+'/historial').push({falla,color,hecho,usuario,fecha}); 
+  cerrar(); 
+  document.getElementById('hecho').value=''; 
+}
+
+cargarNivel();
+</script>
+</body>
+</html>
+*¿Qué hacer ahora?*
+1. Guarda los 2 archivos en Acode
+2. Crea la carpeta `planos` y mete tus 6 imágenes `nivel1.png` a `nivel6.png`
+3. Súbelos a GitHub
+
+¿Ya los guardaste? Cuando los guardes dime y te digo como sacar el link para los 20 usuarios sin pagar nada.
